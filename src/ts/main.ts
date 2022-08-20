@@ -15,10 +15,11 @@ function loadImage(src: string): Promise<HTMLImageElement> {
 
 function main() {
   return Promise.all([
-    loadImage('./dist/img/bg.png'),
     loadImage('./dist/img/bees.png'),
+    loadImage('./dist/img/grass.png'),
+    loadImage('./dist/img/flowers.png'),
   ])
-  .then(([imageBg, imageBees]) => {
+  .then(([imageBees, imageBg]) => {
     const CLS_NONE = 'none';
     const canvas = document.querySelector('canvas');
     const $menu = document.querySelector('.menu');

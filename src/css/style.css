@@ -17,7 +17,7 @@ body {
   align-items: center;
   justify-content: center;
   font-family: "GameFont", Arial, sans-serif;
-  background-image: url("../img/bg.png");
+  background-image: url("../img/flowers.png"), url("../img/grass.png");
 }
 
 .app {
@@ -35,15 +35,12 @@ body {
   right:  0;
 }
 
-.game {
-  background-color: #ffffff;
-}
-
 canvas {
   /*outline: 1px solid #fff;*/
 }
 
 .game-header {
+  background-color: rgba(0, 0, 0, .3);
   display: flex;
   justify-content: space-between;
   position: absolute;
