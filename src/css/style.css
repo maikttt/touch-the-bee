@@ -1,0 +1,83 @@
+@font-face {
+  font-family: "GameFont";
+  src: url("../BAQOSKHA.otf");
+}
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+.none {
+  display: none !important;
+}
+
+body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "GameFont", Arial, sans-serif;
+  background-image: url("../img/bg.png");
+}
+
+.app {
+  position: relative;
+  width: 1200px;
+  height: 800px;
+}
+
+.game,
+.menu {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom:  0;
+  right:  0;
+}
+
+.game {
+  background-color: #ffffff;
+}
+
+canvas {
+  /*outline: 1px solid #fff;*/
+}
+
+.game-header {
+  display: flex;
+  justify-content: space-between;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 64px;
+}
+
+.timer,
+.score {
+  display: inline-block;
+  padding:  10px;
+  color:  #ff9202;
+  font-size:  42px;
+  text-shadow: 2px 1px 3px #000000;
+}
+
+
+.menu {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.menu button {
+  display: inline-block;
+  font-size:  40px;
+  padding: 20px 100px;
+  font-family: GameFont, Arial, sans-serif;
+  background-color: #ff9202;
+  color: #fff;
+  outline: 0;
+  border: 10px solid #da9f67;
+  border-radius: 30px;
+  box-shadow: 0px 0px 10px -5px #ff9202;
+}
