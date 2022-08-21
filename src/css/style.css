@@ -20,6 +20,11 @@ body {
   background-image: url("../img/flowers.png"), url("../img/grass.png");
 }
 
+canvas,
+button {
+  cursor:  pointer;
+}
+
 .app {
   position: relative;
   width: 1200px;
@@ -27,6 +32,7 @@ body {
 }
 
 .game,
+.final-message,
 .menu {
   position: absolute;
   top: 0;
@@ -66,6 +72,7 @@ canvas {
   justify-content: center;
 }
 
+.final-message div button,
 .menu button {
   display: inline-block;
   font-size:  40px;
@@ -77,4 +84,22 @@ canvas {
   border: 10px solid #da9f67;
   border-radius: 30px;
   box-shadow: 0px 0px 10px -5px #ff9202;
+}
+
+.final-message {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.final-message div {
+  display: inline-block;
+  font-size: 40px;
+  padding: 20px 100px;
+  font-family: GameFont, Arial, sans-serif;
+  background-color: #886638;
+  color: #fff;
+  outline: 0;
+  border: 10px solid #ffffff;
+  border-radius: 30px;
 }

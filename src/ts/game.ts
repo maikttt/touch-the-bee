@@ -22,12 +22,14 @@ class HiveCell {
   public y: number;
   public size: number;
   public beeColor: BEE_COLOR;
+  public beeAngle: number;
 
-  constructor(x: number, y: number, size: number, beeColor: BEE_COLOR) {
+  constructor(x: number, y: number, size: number, beeColor: BEE_COLOR, beeAngle: number) {
     this.x = x;
     this.y = y;
     this.size = size;
     this.beeColor = beeColor;
+    this.beeAngle = beeAngle;
   }
 
   bornBee(): Bee {
@@ -36,7 +38,7 @@ class HiveCell {
     }
     const beeColor = this.beeColor;
     this.beeColor = BEE_COLOR.EMPTY;
-    return new Bee(this.x, this.y, 0, this.size, beeColor);
+    return new Bee(this.x, this.y, this.beeAngle, this.size, beeColor);
   }
 }
 
@@ -51,7 +53,7 @@ class Hive {
     for (let i = 0; i < n; i++) {
       for (let j = 0; j < m; j++) {
         this.cells.push(
-          new HiveCell(x + 1.5 * j * size, y + size * sin * (2 * i + (j % 2)), size, BEE_COLOR.EMPTY)
+          new HiveCell(x + 1.5 * j * size, y + size * sin * (2 * i + (j % 2)), size, BEE_COLOR.EMPTY, Math.PI)
         );
       }
     }
@@ -125,7 +127,7 @@ class HiveCellRecolor implements IAnimator {
 
   constructor(private cells: Array<HiveCell>) {
     this.beeColorOrder = [];
-    const c = [BEE_COLOR.PURPLE, BEE_COLOR.GREEN, BEE_COLOR.BLUE, BEE_COLOR.YELLOW];
+    const c = [BEE_COLOR.PURPLE, BEE_COLOR.GREEN, BEE_COLOR.BLUE, BEE_COLOR.YELLOW, BEE_COLOR.YELLOW];
     const l = c.length;
     const t = Date.now();
     for (let i = 0; i < l; i++) {
@@ -134,7 +136,9 @@ class HiveCellRecolor implements IAnimator {
   }
 
   move(deltaTime: number): boolean {
-    const n = this.rand(Math.floor(this.cells.length / 5), Math.floor(this.cells.length / 3));
+    this.clearBees();
+
+    const n = this.rand(Math.floor(this.cells.length / 4), Math.floor(this.cells.length / 2));
     const nums: Set<number> = new Set();
     for (let i = 0; i < n; i++) {
       let index = this.rand(0, this.cells.length);
@@ -147,8 +151,15 @@ class HiveCellRecolor implements IAnimator {
     const arr = Array.from(nums);
     for (let i = 0; i < n; i++) {
       this.cells[arr[i]].beeColor = this.beeColorOrder[i % this.beeColorOrder.length];
+      this.cells[arr[i]].beeAngle = Math.PI * this.rand(0, 360) / 180;
     }
     return false;
+  }
+
+  private clearBees() {
+    for (let cell of this.cells) {
+      cell.beeColor = BEE_COLOR.EMPTY;
+    }
   }
 
   private rand(a: number, b: number): number {
@@ -167,9 +178,12 @@ class BeeFly implements IAnimator {
     if (bee.y + bee.size < 0 || bee.y > this.h) {
       return false;
     }
+
+    // We add 45deg, since the bees in the images are also rotated with 45deg
+    const angle = bee.angle + Math.PI / 4;
     this.speed -= 0.005 * deltaTime;
-    bee.x += deltaTime * this.speed;
-    bee.y += deltaTime * this.speed;
+    bee.x += deltaTime * Math.cos(angle) * this.speed;
+    bee.y += deltaTime * Math.sin(angle) * this.speed;
     return true;
   }
 }
@@ -230,7 +244,6 @@ class HiveGameDrawer {
 
   constructor(
     private ctx: CanvasRenderingContext2D,
-    private imageBg: HTMLImageElement,
     private imageBee: HTMLImageElement,
    ) {
     this.$score = document.querySelector('.score');
@@ -240,28 +253,16 @@ class HiveGameDrawer {
   drawHiveCell(cell: HiveCell) {
     this.drawHiveCellLines(cell);
     if (cell.beeColor != BEE_COLOR.EMPTY) {
-      this.putBeeImage(cell.x, cell.y, cell.size, cell.beeColor);
+      this.putBeeImage(cell.x, cell.y, cell.size, cell.beeAngle, cell.beeColor);
     }
   }
 
   drawBee(bee: Bee) {
-    console.log(bee.angle);
-    this.putBeeImage(bee.x, bee.y, bee.size, bee.color);
+    this.putBeeImage(bee.x, bee.y, bee.size, bee.angle, bee.color);
   }
 
   drawBg() {
-    const { ctx, imageBg } = this;
-    /* const { height, width } = imageBg;
-    const m = Math.ceil(ctx.canvas.width / width);
-    const n = Math.ceil(ctx.canvas.height / height);
-    for (let i = 0; i < n; i++) {
-      for (let j = 0; j < m; j++) {
-        this.ctx.drawImage(
-          this.imageBg, 0, 0, width, height, j * width, i * height, width, height
-        );
-      }
-    } */
-
+    const { ctx } = this;
     ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
   }
 
@@ -276,12 +277,18 @@ class HiveGameDrawer {
     this.$time.innerText = `${int}.${rest < 10 ? `0${rest}` : rest}`;
   }
 
-  private putBeeImage(x: number, y: number, size: number, color: BEE_COLOR) {
+  private putBeeImage(x: number, y: number, size: number, angle: number, color: BEE_COLOR) {
     const [bx, by] = this.beeImageCoordsByColor(color);
     const semisize = size / 2;
+
+    this.ctx.save();
+    this.ctx.translate(x, y);
+    this.ctx.rotate(angle);
+    this.ctx.translate(-x, -y);
     this.ctx.drawImage(
       this.imageBee, bx, by, 720, 720, x - semisize, y - semisize, size, size
     );
+    this.ctx.restore();
   }
 
   private drawHiveCellLines(cell: HiveCell) {
@@ -350,10 +357,9 @@ export class HiveGame {
 
   constructor(
     ctx: CanvasRenderingContext2D,
-    imageBg: HTMLImageElement,
     imageBee: HTMLImageElement,
    ) {
-    this.drawer = new HiveGameDrawer(ctx, imageBg, imageBee);
+    this.drawer = new HiveGameDrawer(ctx, imageBee);
 
     const m = 8;
     const n = 4;
