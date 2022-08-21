@@ -4,7 +4,7 @@
   "description": "Touch the drone bee",
   "scripts": {
     "build:js": "gulp js",
-    "build:css": "gulp scss",
+    "build:css": "gulp css",
     "build": "gulp build",
     "watch:js": "webpack --watch",
     "serve": "gulp serve"
