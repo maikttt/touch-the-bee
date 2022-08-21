@@ -174,25 +174,27 @@ class BeeFly implements IAnimator {
   }
 }
 
-class ParallelAnimation implements IAnimator {
-  constructor(private anims: Array<IAnimator>, private callback: Function | null = null) {}
+class AnimationEndNotiff implements IAnimator {
+  private executed: boolean = false;
 
-  move(deltaTime: number): boolean {
-    if (!this.anims.length) {
-      if (this.callback) {
-        this.callback();
-        this.callback = null;
-      }
+  constructor(private anim: IAnimator, private endCallback: Function) {}
+
+  move(deltaT: number): boolean {
+    if (this.executed) {
       return false;
     }
-    const moves = this.anims.map(anim => anim.move(deltaTime));
-    this.anims = this.anims.filter((_, i) => moves[i]);
+    const wasMoved = this.anim.move(deltaT);
+    if (!wasMoved) {
+      this.executed = true;
+      this.endCallback();
+      return false;
+    }
     return true;
   }
 }
 
 class SerialAnimation implements IAnimator {
-  constructor(private anims: Array<IAnimator>, private callback: Function | null = null) {}
+  constructor(private anims: Array<IAnimator>) {}
 
   move(deltaTime: number): boolean {
     while (this.anims.length) {
@@ -201,11 +203,24 @@ class SerialAnimation implements IAnimator {
       }
       this.anims.shift();
     }
-    if (this.callback) {
-      this.callback();
-      this.callback = null;
-    }
     return false;
+  }
+}
+
+class ParallelAnimation {
+  constructor(private anims: Array<IAnimator>) {}
+
+  move(deltaTime: number): boolean {
+    if (!this.anims.length) {
+      return false;
+    }
+    const moves = this.anims.map(anim => anim.move(deltaTime));
+    this.anims = this.anims.filter((_, i) => moves[i]);
+    return true;
+  }
+
+  add(animation: IAnimator) {
+    this.anims.push(animation);
   }
 }
 
@@ -230,6 +245,7 @@ class HiveGameDrawer {
   }
 
   drawBee(bee: Bee) {
+    console.log(bee.angle);
     this.putBeeImage(bee.x, bee.y, bee.size, bee.color);
   }
 
@@ -325,7 +341,7 @@ export class HiveGame {
   private drawer: HiveGameDrawer = null;
   private hive: Hive;
   private bees: Array<Bee> = [];
-  private animator: IAnimator | null = null;
+  private animator: ParallelAnimation = new ParallelAnimation([]);
   private isAnimating: boolean = false;
   private gameState: GAME_STATE = GAME_STATE.WAITING_USER;
   private score: number;
@@ -351,7 +367,6 @@ export class HiveGame {
   }
 
   init() {
-    this.animator = null;
     this.bees = [];
 
     new HiveCellRecolor(this.hive.cells).move(0);
@@ -374,12 +389,12 @@ export class HiveGame {
   private handleCorrectTouch(bee: Bee) {
     this.score++;
     this.bees.push(bee);
-    if (!this.animator) {
-      this.animator = new ParallelAnimation([]);
-    }
-    this.animator = new ParallelAnimation(
-      // @TODO: canvas size should not be hardcoded here
-      this.bees.map(b => new BeeFly(b, -0.1, 1200, 800))
+    this.animator.add(
+      new AnimationEndNotiff(
+        new BeeFly(bee, -0.1, 1200, 800), () => {
+          this.bees = this.bees.filter(b => b !== bee);
+        }
+      )
     );
     this.runAnimation();
   }
@@ -435,14 +450,11 @@ export class HiveGame {
     const prevTime = Date.now();
     requestAnimationFrame(() => {
       const deltaT = Date.now() - prevTime;
-      const wasMoved = this.animator ? this.animator.move(deltaT) : false;
+      this.animator.move(deltaT);
       this.timeLeft = Math.max(0, this.timeLeft - deltaT);
       this.draw();
       this.isAnimating = false;
       this.runAnimation();
-      if (!wasMoved && this.animator) {
-        this.animator = null;
-      }
       if (!this.timeLeft) {
         this.trigger('endgame', this.score);
       }
@@ -451,13 +463,17 @@ export class HiveGame {
 
   private changeHives() {
     this.bees = [];
-    this.animator = new SerialAnimation([
-      new HiveCellBlink(this.hive.cells, -1, 10),
-      new HiveCellRecolor(this.hive.cells),
-      new HiveCellBlink(this.hive.cells, 5, this.hive.cellSize),
-    ], () => {
-      this.gameState = GAME_STATE.WAITING_USER;
-    });
+    this.animator = new ParallelAnimation([
+      new AnimationEndNotiff(
+        new SerialAnimation([
+          new HiveCellBlink(this.hive.cells, -1, 10),
+          new HiveCellRecolor(this.hive.cells),
+          new HiveCellBlink(this.hive.cells, 5, this.hive.cellSize),
+        ]), () => {
+          this.gameState = GAME_STATE.WAITING_USER;
+        }
+      )
+    ]);
   }
 
   private newLevelRequired(): boolean {
